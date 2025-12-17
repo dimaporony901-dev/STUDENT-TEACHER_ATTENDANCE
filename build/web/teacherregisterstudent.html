@@ -1,0 +1,123 @@
+<!DOCTYPE html>  
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register Student</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>REGISTER STUDENT</h1>
+<div class="container panel">
+    <div class="form-group">
+        <label>ID NUMBER:</label>
+        <input type="text" id="studentId">
+        <label>NAME:</label>
+        <input type="text" id="studentName">
+        <label>PASSWORD:</label>
+        <input type="password" id="studentPassword">
+        <label>PROGRAM / COURSE:</label>
+        <input type="text" id="studentProgram">
+        <label>YEAR LEVEL:</label>
+        <input type="text" id="studentYear">
+        <button id="addStudentBtn">ADD STUDENT</button>
+        <button id="updateStudentBtn">UPDATE STUDENT</button>
+        <button id="deleteStudentBtn">DELETE STUDENT</button>
+    </div>
+
+    <h3>Registered Students</h3>
+    <table id="studentsTable">
+        <thead>
+            <tr>
+                <th>ID</th><th>Name</th><th>Password</th><th>Program</th><th>Year</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script>
+function loadStudents() {
+    fetch("AttendanceServlet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "getAllStudents" })
+    }).then(res => res.json()).then(data => {
+        const tbody = document.querySelector("#studentsTable tbody");
+        tbody.innerHTML = "";
+        data.data.forEach(st => {
+            const tr = document.createElement("tr");
+            tr.dataset.studentId = st.id;
+            tr.innerHTML = `<td>${st.id}</td><td>${st.name}</td><td>${st.password}</td><td>${st.program}</td><td>${st.year}</td>`;
+            tbody.appendChild(tr);
+        });
+    });
+}
+
+loadStudents();
+
+let selectedStudent = null;
+document.querySelector("#studentsTable tbody").addEventListener("click", e => {
+    if(e.target.tagName === "TD") {
+        document.querySelectorAll("#studentsTable tr").forEach(r => r.classList.remove("selected"));
+        const tr = e.target.closest("tr");
+        tr.classList.add("selected");
+        selectedStudent = tr;
+        document.getElementById("studentId").value = tr.cells[0].textContent;
+        document.getElementById("studentName").value = tr.cells[1].textContent;
+        document.getElementById("studentPassword").value = tr.cells[2].textContent;
+        document.getElementById("studentProgram").value = tr.cells[3].textContent;
+        document.getElementById("studentYear").value = tr.cells[4].textContent;
+    }
+});
+
+document.getElementById("addStudentBtn").addEventListener("click", () => {
+    const student = {
+        id: parseInt(document.getElementById("studentId").value),
+        name: document.getElementById("studentName").value,
+        password: document.getElementById("studentPassword").value,
+        program: document.getElementById("studentProgram").value,
+        year: document.getElementById("studentYear").value
+    };
+    fetch("AttendanceServlet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "addStudent", student })
+    }).then(res => res.json()).then(data => {
+        if(data.status === "success") loadStudents();
+        else alert(data.message);
+    });
+});
+
+document.getElementById("updateStudentBtn").addEventListener("click", () => {
+    if(!selectedStudent) return alert("Select a student first.");
+    const student = {
+        id: parseInt(document.getElementById("studentId").value),
+        name: document.getElementById("studentName").value,
+        password: document.getElementById("studentPassword").value,
+        program: document.getElementById("studentProgram").value,
+        year: document.getElementById("studentYear").value
+    };
+    fetch("AttendanceServlet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "updateStudent", student })
+    }).then(res => res.json()).then(data => {
+        if(data.status === "success") loadStudents();
+        else alert(data.message);
+    });
+});
+
+document.getElementById("deleteStudentBtn").addEventListener("click", () => {
+    if(!selectedStudent) return alert("Select a student first.");
+    fetch("AttendanceServlet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "deleteStudent", id: parseInt(selectedStudent.dataset.studentId) })
+    }).then(res => res.json()).then(data => {
+        if(data.status === "success") loadStudents();
+        else alert(data.message);
+    });
+});
+</script>
+</body>
+</html>

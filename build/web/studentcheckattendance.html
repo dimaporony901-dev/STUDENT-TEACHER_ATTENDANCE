@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Student Check Attendance</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>STUDENT ATTENDANCE</h1>
+<div class="container panel">
+    <label>SECTION:</label>
+    <input type="text" id="section" readonly>
+    <label>SUBJECT:</label>
+    <input type="text" id="subject" readonly>
+    <label>SCHEDULE:</label>
+    <input type="text" id="schedule" readonly>
+    <label>DATE:</label>
+    <input type="text" id="date" readonly>
+
+    <button id="presentBtn">PRESENT</button>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", ()=>{
+    const sectionId = localStorage.getItem("sectionId");
+    const studentId = localStorage.getItem("id");
+
+    document.getElementById("section").value = localStorage.getItem("sectionName");
+    document.getElementById("subject").value = localStorage.getItem("subject");
+    document.getElementById("schedule").value = localStorage.getItem("schedule");
+    document.getElementById("date").value = new Date().toISOString().split("T")[0];
+
+    document.getElementById("presentBtn").addEventListener("click", ()=>{
+        fetch("AttendanceServlet", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({action:"studentPresent", sectionId:parseInt(sectionId)})
+        }).then(res=>res.json()).then(data=>{
+            alert(data.status==="success"?"Attendance recorded!":data.message);
+            if(data.status==="success") window.location.href="studentmainwindow.html";
+        });
+    });
+});
+</script>
+</body>
+</html>

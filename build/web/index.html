@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Login</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>LOGIN</h1>
+<div class="container login-panel">
+    <label>ID NUMBER:</label>
+    <input type="text" id="id">
+    <label>PASSWORD:</label>
+    <input type="password" id="password">
+    <label>ROLE:</label>
+    <select id="role">
+        <option value="student">STUDENT</option>
+        <option value="teacher">TEACHER</option>
+    </select>
+    <button id="loginBtn">LOGIN</button>
+</div>
+
+<script>
+document.getElementById("loginBtn").addEventListener("click", ()=>{
+    const id = parseInt(document.getElementById("id").value);
+    const password = document.getElementById("password").value;
+    const role = document.getElementById("role").value;
+
+    fetch("AttendanceServlet", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({action:"login", id, password, role})
+    }).then(res=>res.json())
+    .then(data=>{
+        if(data.status==="success"){
+            localStorage.setItem("id", id);
+            localStorage.setItem("name", data.name);
+            window.location.href = role==="student" ? "studentmainwindow.html" : "teachermainwindow.html";
+        } else alert(data.message);
+    });
+});
+</script>
+</body>
+</html>

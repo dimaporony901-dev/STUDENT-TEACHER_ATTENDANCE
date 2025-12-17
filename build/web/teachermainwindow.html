@@ -1,0 +1,99 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Teacher Main Window</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>TEACHER MAIN WINDOW</h1>
+<div class="container panel">
+    <label>ID NUMBER:</label>
+    <input type="text" id="teacherId" readonly>
+    <label>NAME:</label>
+    <input type="text" id="teacherName" readonly>
+
+    <div class="table-container">
+        <table id="teacherSectionsTable">
+            <thead>
+                <tr>
+                    <th>Section</th><th>Subject</th><th>Schedule</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <button id="enterSectionBtn">ENTER</button>
+    <button id="deleteSectionBtn">DELETE SECTION</button>
+    <button id="createSectionBtn">CREATE SECTION</button>
+    <button id="registerStudentBtn">REGISTER STUDENT</button>
+    <button id="registerTeacherBtn">REGISTER TEACHER</button>
+    <button id="logoutBtn">LOGOUT</button>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", ()=>{
+    const teacherId = localStorage.getItem("id");
+    document.getElementById("teacherId").value = teacherId;
+    document.getElementById("teacherName").value = localStorage.getItem("name");
+
+    fetch("AttendanceServlet", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({action:"getTeacherSections"})
+    }).then(res=>res.json()).then(data=>{
+        const tbody = document.querySelector("#teacherSectionsTable tbody");
+        tbody.innerHTML="";
+        data.data.forEach(s=>{
+            const tr = document.createElement("tr");
+            tr.dataset.sectionId = s.sectionId;
+            tr.dataset.sectionName = s.section;
+            tr.dataset.subject = s.subject;
+            tr.dataset.schedule = s.schedule;
+            tr.innerHTML=`<td>${s.section}</td><td>${s.subject}</td><td>${s.schedule}</td>`;
+            tbody.appendChild(tr);
+        });
+    });
+
+    let selectedSection = null;
+    document.querySelector("#teacherSectionsTable tbody").addEventListener("click", e=>{
+        if(e.target.tagName==="TD"){
+            document.querySelectorAll("#teacherSectionsTable tr").forEach(r=>r.classList.remove("selected"));
+            const tr = e.target.closest("tr");
+            tr.classList.add("selected");
+            selectedSection = tr.dataset;
+        }
+    });
+
+    document.getElementById("enterSectionBtn").addEventListener("click", ()=>{
+        if(!selectedSection) return alert("Select a section.");
+        localStorage.setItem("sectionId", selectedSection.sectionId);
+        localStorage.setItem("sectionName", selectedSection.sectionName);
+        localStorage.setItem("subject", selectedSection.subject);
+        localStorage.setItem("schedule", selectedSection.schedule);
+        window.location.href = "teachercheckattendance.html";
+    });
+
+    document.getElementById("deleteSectionBtn").addEventListener("click", ()=>{
+        if(!selectedSection) return alert("Select a section.");
+        if(confirm("Delete this section? All students will be removed.")){
+            fetch("AttendanceServlet", {
+                method:"POST",
+                headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({action:"deleteSection", sectionId:parseInt(selectedSection.sectionId)})
+            }).then(()=>location.reload());
+        }
+    });
+
+    document.getElementById("createSectionBtn").addEventListener("click", ()=> window.location.href="teachercreatesection.html");
+    document.getElementById("registerStudentBtn").addEventListener("click", ()=> window.location.href="teacherregisterstudent.html");
+    document.getElementById("registerTeacherBtn").addEventListener("click", ()=> window.location.href="teacherregisterteacher.html");
+    document.getElementById("logoutBtn").addEventListener("click", ()=>{
+        localStorage.clear();
+        window.location.href="index.html";
+    });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>  
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Section</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>CREATE SECTION</h1>
+<div class="container panel">
+    <label>SECTION:</label>
+    <input type="text" id="section">
+    <label>SUBJECT:</label>
+    <input type="text" id="subject">
+    <label>SCHEDULE START (HH:MM:SS):</label>
+    <input type="text" id="start">
+    <label>SCHEDULE END (HH:MM:SS):</label>
+    <input type="text" id="end">
+    <button id="lockSectionBtn">LOCK</button>
+
+    <div class="tables-container">
+        <div>
+            <h3>Available Students</h3>
+            <table id="listOfStudentsTable">
+                <thead>
+                    <tr><th>ID</th><th>Name</th><th>Program</th><th>Year</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <button id="addStudentBtn">ADD</button>
+        </div>
+        <div>
+            <h3>Added Students</h3>
+            <table id="addStudentTable">
+                <thead>
+                    <tr><th>ID</th><th>Name</th><th>Program</th><th>Year</th></tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <button id="removeStudentBtn">REMOVE</button>
+        </div>
+    </div>
+    <button id="saveSectionBtn">SAVE SECTION</button>
+</div>
+
+<script>
+let locked = false;
+document.getElementById("lockSectionBtn").addEventListener("click", () => {
+    if(!document.getElementById("section").value || !document.getElementById("subject").value
+       || !document.getElementById("start").value || !document.getElementById("end").value)
+       return alert("Fill all fields!");
+    locked = true;
+    loadAllStudents();
+});
+
+function loadAllStudents(){
+    fetch("AttendanceServlet", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({action:"getAllStudents"})
+    }).then(res=>res.json())
+    .then(data=>{
+        const tbody=document.querySelector("#listOfStudentsTable tbody");
+        tbody.innerHTML="";
+        data.data.forEach(s=>{
+            const tr=document.createElement("tr");
+            tr.dataset.id=s.id;
+            tr.innerHTML=`<td>${s.id}</td><td>${s.name}</td><td>${s.program}</td><td>${s.year}</td>`;
+            tbody.appendChild(tr);
+        });
+    });
+}
+
+document.getElementById("addStudentBtn").addEventListener("click", ()=>{
+    const selected=document.querySelector("#listOfStudentsTable tr.selected");
+    if(!selected) return;
+    document.querySelector("#addStudentTable tbody").appendChild(selected);
+});
+
+document.getElementById("removeStudentBtn").addEventListener("click", ()=>{
+    const selected=document.querySelector("#addStudentTable tr.selected");
+    if(!selected) return;
+    document.querySelector("#listOfStudentsTable tbody").appendChild(selected);
+});
+
+document.querySelectorAll("table").forEach(tbl=>{
+    tbl.addEventListener("click", e=>{
+        if(e.target.tagName==="TD"){
+            tbl.querySelectorAll("tr").forEach(r=>r.classList.remove("selected"));
+            e.target.closest("tr").classList.add("selected");
+        }
+    });
+});
+
+document.getElementById("saveSectionBtn").addEventListener("click", ()=>{
+    if(!locked) return alert("Lock the section first!");
+    const students=[];
+    document.querySelectorAll("#addStudentTable tbody tr").forEach(tr=>students.push(parseInt(tr.dataset.id)));
+
+    fetch("AttendanceServlet", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            action:"createSectionWithStudents",
+            section:document.getElementById("section").value,
+            subject:document.getElementById("subject").value,
+            start:document.getElementById("start").value,
+            end:document.getElementById("end").value,
+            students:students
+        })
+    }).then(res=>res.json())
+    .then(data=>{
+        if(data.status==="success") window.location.href="teachermainwindow.html";
+        else alert(data.message || "Operation failed. Please login again.");
+    });
+});
+</script>
+</body>
+</html>

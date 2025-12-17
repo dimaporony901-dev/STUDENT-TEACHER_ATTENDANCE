@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Student Main Window</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>STUDENT MAIN WINDOW</h1>
+<div class="container panel">
+    <label>ID NUMBER:</label>
+    <input type="text" id="studentId" readonly>
+    <label>NAME:</label>
+    <input type="text" id="studentName" readonly>
+
+    <div class="table-container">
+        <table id="studentSectionsTable">
+            <thead>
+                <tr><th>Section</th><th>Subject</th><th>Schedule</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <button id="enterSectionBtn">ENTER</button>
+    <button id="logoutBtn">LOGOUT</button>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", ()=>{
+    const studentId = localStorage.getItem("id");
+    document.getElementById("studentId").value = studentId;
+    document.getElementById("studentName").value = localStorage.getItem("name");
+
+    fetch("AttendanceServlet", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({action:"getStudentSections"})
+    }).then(res=>res.json()).then(data=>{
+        const tbody = document.querySelector("#studentSectionsTable tbody");
+        tbody.innerHTML = "";
+        data.data.forEach(s=>{
+            const tr = document.createElement("tr");
+            tr.dataset.sectionId = s.sectionId;
+            tr.dataset.section = s.section;
+            tr.dataset.subject = s.subject;
+            tr.dataset.schedule = s.schedule;
+            tr.innerHTML = `<td>${s.section}</td><td>${s.subject}</td><td>${s.schedule}</td>`;
+            tbody.appendChild(tr);
+        });
+    });
+
+    let selectedSection = null;
+    document.querySelector("#studentSectionsTable tbody").addEventListener("click", e=>{
+        if(e.target.tagName==="TD"){
+            document.querySelectorAll("#studentSectionsTable tr").forEach(r=>r.classList.remove("selected"));
+            const tr = e.target.closest("tr");
+            tr.classList.add("selected");
+            selectedSection = tr.dataset;
+        }
+    });
+
+    document.getElementById("enterSectionBtn").addEventListener("click", ()=>{
+        if(!selectedSection) return alert("Select a section.");
+        localStorage.setItem("sectionId", selectedSection.sectionId);
+        localStorage.setItem("sectionName", selectedSection.section);
+        localStorage.setItem("subject", selectedSection.subject);
+        localStorage.setItem("schedule", selectedSection.schedule);
+        window.location.href = "studentcheckattendance.html";
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", ()=>{
+        localStorage.clear();
+        window.location.href = "index.html";
+    });
+});
+</script>
+</body>
+</html>

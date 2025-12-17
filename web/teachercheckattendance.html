@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Teacher Attendance</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+    <div class="header" style="background-color:#800000; color:white; text-align:center; padding:30px;">
+        <h1>TEACHER ATTENDANCE</h1>
+    </div>
+
+    <div class="section-info" style="background-color:#f2f2f2; padding:20px; margin-top:20px;">
+        <div class="row">
+            <label>SECTION:</label><input type="text" id="sectionName" readonly>
+            <label>SUBJECT:</label><input type="text" id="subject" readonly>
+        </div>
+        <div class="row">
+            <label>SCHEDULE:</label><input type="text" id="schedule" readonly>
+            <label>DATE:</label><input type="text" id="date" readonly>
+        </div>
+    </div>
+
+    <div class="table-container" style="margin-top:20px;">
+        <table id="studentsTable" border="1" style="width:100%; border-collapse:collapse; text-align:center;">
+            <thead style="background-color:#800000; color:white;">
+                <tr>
+                    <th>ID</th><th>Name</th><th>Program</th><th>Year</th>
+                    <th>PRESENT</th><th>ABSENT</th><th>EXCUSED</th>
+                    <th>Status (P/A/E)</th>
+                </tr>
+            </thead>
+            <tbody id="studentsTableBody"></tbody>
+        </table>
+    </div>
+
+    <div class="buttons" style="margin-top:20px; text-align:center;">
+        <button id="saveAttendanceBtn" style="padding:10px 20px; background-color:#800000; color:white; font-weight:bold;">SAVE ATTENDANCE</button>
+        <button id="backBtn" style="padding:10px 20px; background-color:#555555; color:white; font-weight:bold;">BACK</button>
+    </div>
+</div>
+
+<script>
+const sectionId = localStorage.getItem("sectionId");
+document.getElementById("sectionName").value = localStorage.getItem("sectionName");
+document.getElementById("subject").value = localStorage.getItem("subject");
+document.getElementById("schedule").value = localStorage.getItem("schedule");
+document.getElementById("date").value = new Date().toISOString().split("T")[0];
+
+function loadStudents(){
+    fetch("AttendanceServlet", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({action:"getSectionStudents", sectionId:parseInt(sectionId)})
+    }).then(res=>res.json()).then(data=>{
+        if(data.status==="success"){
+            const tbody = document.getElementById("studentsTableBody");
+            tbody.innerHTML="";
+            data.data.forEach(s=>{
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${s.studentId}</td>
+                    <td>${s.name}</td>
+                    <td>${s.program}</td>
+                    <td>${s.year}</td>
+                    <td>${s.present || 0}</td>
+                    <td>${s.absent || 0}</td>
+                    <td>${s.excused || 0}</td>
+                    <td contenteditable="true">${s.status || ''}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    });
+}
+
+document.getElementById("saveAttendanceBtn").addEventListener("click", ()=>{
+    const rows = document.querySelectorAll("#studentsTableBody tr");
+    const attendanceList = [];
+    rows.forEach(row=>{
+        const tds = row.querySelectorAll("td");
+        attendanceList.push({
+            sectionId: parseInt(sectionId),
+            studentId: parseInt(tds[0].innerText),
+            date: new Date().toISOString().split("T")[0],
+            status: tds[7].innerText.trim().toUpperCase()
+        });
+    });
+
+    fetch("AttendanceServlet", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({action:"saveTeacherAttendance", attendance:attendanceList})
+    }).then(res=>res.json()).then(data=>{
+        alert(data.status==="success"?"Attendance saved successfully!":"Failed: "+data.message);
+        loadStudents();
+    });
+});
+
+document.getElementById("backBtn").addEventListener("click", ()=>window.location.href="teachermainwindow.html");
+loadStudents();
+</script>
+</body>
+</html>
